@@ -1,0 +1,129 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                     Ea Smart Queen|
+//|                     https://www.forexroboteasy.com                |
+//|                                          Forex Robot Easy Team     |
+//+------------------------------------------------------------------+
+#property strict
+
+// Input parameters
+input int TakeProfit = 100; // Take Profit level in points
+input int StopLoss = 50; // Stop Loss level in points
+input bool UseGridStrategy = true; // Use grid trading strategy
+input bool UseNonGridStrategy = true; // Use non-grid trading strategy
+
+// Global variables
+int ticket = 0; // Ticket number of the opened position
+double entryPrice = 0; // Entry price of the opened position
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+void OnInit()
+{
+    // Set up necessary indicators and filters
+    // ...
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Clean up resources
+    // ...
+}
+
+//+------------------------------------------------------------------+
+//| Expert start function                                            |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Check if there are open positions
+    if (ticket == 0)
+    {
+        // Determine trading decision based on market analysis
+        bool shouldBuy = ShouldBuy();
+
+        // Open a new position
+        if (shouldBuy)
+        {
+            ticket = OrderSend(Symbol(), OP_BUY, 0.1, Ask, 0, Bid - StopLoss * _Point, Bid + TakeProfit * _Point, 'Buy order', 0, 0, Green);
+            entryPrice = Ask;
+        }
+        else
+        {
+            ticket = OrderSend(Symbol(), OP_SELL, 0.1, Bid, 0, Ask + StopLoss * _Point, Ask - TakeProfit * _Point, 'Sell order', 0, 0, Red);
+            entryPrice = Bid;
+        }
+
+        if (ticket > 0)
+        {
+            Print('Position opened successfully. Ticket: ', ticket);
+        }
+        else
+        {
+            Print('Failed to open position. Error code: ', GetLastError());
+        }
+    }
+    else
+    {
+        // Check if the position has reached the Take Profit or Stop Loss level
+        bool shouldClose = ShouldClose();
+
+        // Close the position
+        if (shouldClose)
+        {
+            bool result = OrderClose(ticket, OrderLots(), OrderClosePrice(), 0, Red);
+            if (result)
+            {
+                Print('Position closed successfully. Ticket: ', ticket);
+            }
+            else
+            {
+                Print('Failed to close position. Error code: ', GetLastError());
+            }
+
+            ticket = 0;
+            entryPrice = 0;
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Check if a buy order should be placed                             |
+//+------------------------------------------------------------------+
+bool ShouldBuy()
+{
+    // Perform market analysis to determine the trading decision
+    // ...
+}
+
+//+------------------------------------------------------------------+
+//| Check if the open position should be closed                       |
+//+------------------------------------------------------------------+
+bool ShouldClose()
+{
+    // Check if the position has reached the Take Profit or Stop Loss level
+    if (ticket > 0)
+    {
+        if (OrderType() == OP_BUY && (Bid - entryPrice) >= TakeProfit * _Point)
+        {
+            return true;
+        }
+        else if (OrderType() == OP_SELL && (entryPrice - Ask) >= TakeProfit * _Point)
+        {
+            return true;
+        }
+        else if (OrderType() == OP_BUY && (entryPrice - Bid) >= StopLoss * _Point)
+        {
+            return true;
+        }
+        else if (OrderType() == OP_SELL && (Ask - entryPrice) >= StopLoss * _Point)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
